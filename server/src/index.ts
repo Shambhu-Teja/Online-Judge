@@ -6,6 +6,7 @@ import connectDB from "../db";
 import healthRoutes from "./health";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
+import problemRoutes from "./routes/problemRoutes";
 const app: Express = express();
 const PORT = process.env.PORT || 5000;
 
@@ -21,6 +22,7 @@ app.use(morgan("dev"));
 app.use("/api/health", healthRoutes);
 app.use("/auth", authRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/problem", problemRoutes);
 // import userRoutes from "./users.js"; // add your routes here
 // app.use("/api/users", userRoutes);
 

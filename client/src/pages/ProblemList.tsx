@@ -10,14 +10,25 @@ import { Difficulty, Problem } from '@/src/types';
 export default function ProblemList() {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
-    fetch('/api/problems')
-      .then(res => res.json())
+    fetch('http://localhost:5000/api/problem/getProblemsList', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(response => response.json())
       .then(data => {
         setProblems(data);
         setLoading(false);
-      });
+      })
+      .catch(error => {
+        console.error('Error fetching problems:', error);
+        setLoading(false);
+      })
   }, []);
 
   const getDifficultyColor = (difficulty: Difficulty) => {
@@ -64,9 +75,7 @@ export default function ProblemList() {
           <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold uppercase tracking-widest text-slate-400">
             <div className="col-span-1">Status</div>
             <div className="col-span-5 md:col-span-6">Title</div>
-            <div className="col-span-3 md:col-span-2">Acceptance</div>
             <div className="col-span-2 md:col-span-1">Difficulty</div>
-            <div className="md:col-span-2 hidden md:block text-right">Activity</div>
           </div>
 
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -96,9 +105,6 @@ export default function ProblemList() {
                        <span className="text-[10px] text-slate-400 font-medium px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">{problem.category}</span>
                     </div>
                   </div>
-                  <div className="col-span-3 md:col-span-2 text-sm font-mono text-slate-500 dark:text-slate-400">
-                    {problem.acceptanceRate}%
-                  </div>
                   <div className="col-span-2 md:col-span-1">
                     <span className={cn(
                       "text-[10px] font-bold px-2 py-1 rounded-full border",
@@ -107,16 +113,7 @@ export default function ProblemList() {
                       {problem.difficulty}
                     </span>
                   </div>
-                  <div className="md:col-span-2 hidden md:flex items-center justify-end gap-3 text-slate-400">
-                    <div className="flex items-center gap-1 text-xs">
-                      <MessageCircle size={12} />
-                      {Math.floor(Math.random() * 100)}
-                    </div>
-                    <div className="flex items-center gap-1 text-xs">
-                      <Star size={12} />
-                      {Math.floor(Math.random() * 50)}
-                    </div>
-                  </div>
+                  
                 </Link>
               ))
             )}

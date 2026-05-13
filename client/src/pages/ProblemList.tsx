@@ -22,7 +22,7 @@ export default function ProblemList() {
     })
       .then(response => response.json())
       .then(data => {
-        setProblems(data);
+        setProblems(data.problems);
         setLoading(false);
       })
       .catch(error => {
@@ -38,6 +38,7 @@ export default function ProblemList() {
       case 'Hard': return 'text-rose-500 bg-rose-50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-900/20';
     }
   };
+  console.log(problems);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -87,7 +88,7 @@ export default function ProblemList() {
               problems.map((problem) => (
                 <Link
                   key={problem.id}
-                  to={`/problems/${problem.id}`}
+                  to={`/problems/${problem._id}`}
                   className="grid grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group"
                 >
                   <div className="col-span-1">

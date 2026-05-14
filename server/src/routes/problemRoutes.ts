@@ -4,6 +4,7 @@ import {createProblem} from '../controllers/problemController';
 import {getProblem, updateProblem, deleteProblem, createTestCase, updateTestCase, deleteTestCase} from '../controllers/problemController';
 import {getProblemsList} from '../controllers/problemController';
 import {runCode} from '../controllers/problemController';
+import { submitCode } from '../controllers/submissionController';
 
 const router = Router();
 
@@ -21,5 +22,7 @@ router.delete("/testcases/:id", authenticate, deleteTestCase);
 router.post('/getProblemsList',authenticate,getProblemsList);
 
 router.post('/runCode',authenticate,runCode);
+
+router.post('/submitCode',authenticate,submitCode);
 
 export default router;

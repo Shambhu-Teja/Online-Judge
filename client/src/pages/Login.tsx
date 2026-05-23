@@ -5,6 +5,9 @@ import { motion } from 'motion/react';
 import { LogIn, Github, Mail } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,7 +16,7 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/auth/signin', {
+      const response = await fetch(`${API_BASE_URL}/auth/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

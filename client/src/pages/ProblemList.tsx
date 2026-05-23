@@ -7,13 +7,15 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/src/lib/utils';
 import { Difficulty, Problem } from '@/src/types';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export default function ProblemList() {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/problem/getProblemsList', {
+    fetch(`${API_BASE_URL}/api/problem/getProblemsList`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

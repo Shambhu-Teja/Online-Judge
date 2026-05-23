@@ -5,6 +5,10 @@ import Navbar from '@/src/components/Navbar';
 import { Link } from 'react-router-dom';
 import { cn } from '@/src/lib/utils';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+
+
 export default function Home() {
   const [username, setUsername] = useState('User');
 
@@ -23,7 +27,7 @@ export default function Home() {
 
       if (!token) return 'User';
 
-      const apiResponse = await fetch(`http://localhost:5000/api/user/${userId}`, {
+      const apiResponse = await fetch(`${API_BASE_URL}/api/user/${userId}`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,

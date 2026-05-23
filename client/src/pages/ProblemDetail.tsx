@@ -19,6 +19,9 @@ import Editor from '@monaco-editor/react';
 import Navbar from '@/src/components/Navbar';
 import { cn } from '@/src/lib/utils';
 
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 type Difficulty = 'Easy' | 'Medium' | 'Hard';
 
 interface TestCase {
@@ -108,7 +111,7 @@ export default function ProblemDetail() {
   useEffect(() => {
     setLoading(true);
 
-    fetch(`http://localhost:5000/api/problem/${id}`, {
+    fetch(`${API_BASE_URL}/api/problem/${id}`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem(
           'token'
@@ -136,7 +139,7 @@ export default function ProblemDetail() {
       setRunningCode(true);
 
       const response = await fetch(
-        'http://localhost:5000/api/problem/runCode',
+        `${API_BASE_URL}/api/problem/runCode`,
         {
           method: 'POST',
           headers: {
@@ -173,7 +176,7 @@ export default function ProblemDetail() {
       setSubmittingCode(true);
 
       const response = await fetch(
-        'http://localhost:5000/api/problem/submitCode',
+        `${API_BASE_URL}/api/problem/submitCode`,
         {
           method: 'POST',
           headers: {

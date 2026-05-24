@@ -13,6 +13,7 @@ interface IProblem extends Document {
   hint1?: string;
   hint2?: string;
   createdBy: mongoose.Types.ObjectId|null;
+  correctCode: string;
 }
 
 const problemSchema = new Schema<IProblem>(
@@ -54,6 +55,10 @@ const problemSchema = new Schema<IProblem>(
     sampleTestCase2Explaination: {
       type: String,
       default: ""
+    },
+    correctCode: {
+      type: String,
+      required: true
     },
     hint1: {
       type: String,

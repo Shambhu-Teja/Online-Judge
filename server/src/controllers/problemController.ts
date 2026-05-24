@@ -13,7 +13,8 @@ export const runCode = async (
     const {
       code,
       language,
-      problemId
+      problemId,
+      customInputTestCase
     } = req.body;
 
     if (!code || !language || !problemId) {
@@ -35,14 +36,40 @@ export const runCode = async (
       });
     }
 
-    const testCases = [
+    const testCases: any[] = [
       problem.sampleTestCase1,
-      problem.sampleTestCase2
+      problem.sampleTestCase2,
     ].filter(Boolean);
+
+    // =========================
+    // HANDLE CUSTOM INPUT
+    // =========================
+
+    if (customInputTestCase?.input) {
+
+      // Run correct solution first
+      const correctResult = await executeCode({
+        code: problem.correctCode,
+        language: "python", // store this in DB
+        input: customInputTestCase.input,
+        expectedOutput: "",
+      });
+
+      // Add generated testcase
+      testCases.push({
+        _id: "custom",
+        input: customInputTestCase.input,
+        expectedOutput: correctResult.output,
+      });
+    }
 
     const results = [];
 
-    for (const tc of testCases as any[]) {
+    // =========================
+    // RUN USER CODE
+    // =========================
+
+    for (const tc of testCases) {
       const result = await executeCode({
         code,
         language,
@@ -61,6 +88,7 @@ export const runCode = async (
       success: true,
       results
     });
+
   } catch (err: any) {
     return res.status(500).json({
       success: false,
@@ -89,7 +117,8 @@ export const createProblem = async (
       hint1,
       hint2,
       createdBy,
-      testCases
+      testCases,
+      correctCode
     } = req.body;
 
     // create problem first
@@ -103,7 +132,8 @@ export const createProblem = async (
       sampleTestCase2Explaination,
       hint1,
       hint2,
-      createdBy
+      createdBy,
+      correctCode
     });
 
     let createdTestCases: any[] = [];

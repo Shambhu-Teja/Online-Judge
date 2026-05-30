@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Play,
   Send,
@@ -54,14 +54,90 @@ interface Problem {
   hint2?: string;
 }
 
+interface Submission {
+  _id: string;
+  language: string;
+  status: string;
+  executionTime: number;
+  memoryUsed: number;
+  totalTestCases: number;
+  passedTestCases: number;
+  createdAt: string;
+}
+
+function SubmissionRow({
+  submission,
+  problemId,
+}: {
+  submission: Submission;
+  problemId: string;
+}) {
+  const navigate = useNavigate();
+  
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    return status === 'Accepted' ? 'text-emerald-400' : 'text-red-400';
+  };
+
+  const languageEmoji = {
+    python: '🐍',
+    cpp: '⚙️',
+    java: '☕',
+  }[submission.language.toLowerCase()] || '📄';
+
+  return (
+    <button
+      onClick={() => navigate(`/problems/${problemId}/submissions/${submission._id}`)}
+      className="w-full grid grid-cols-7 gap-2 px-4 py-3 text-sm bg-slate-800/50 hover:bg-slate-800 rounded-lg transition-all border border-transparent hover:border-slate-700"
+    >
+      <div className="text-slate-300 flex items-center gap-1">
+        <span>{languageEmoji}</span>
+        {submission.language.charAt(0).toUpperCase() + submission.language.slice(1)}
+      </div>
+      <div className={cn('font-semibold', getStatusColor(submission.status))}>
+        {submission.status}
+      </div>
+      <div className="text-slate-400">{submission.executionTime}</div>
+      <div className="text-slate-400">{Math.round(submission.memoryUsed)}</div>
+      <div className="text-slate-400">
+        {submission.passedTestCases}/{submission.totalTestCases}
+      </div>
+      <div className="text-slate-400 text-xs">{formatDate(submission.createdAt)}</div>
+      <div className="text-right">
+        <ChevronDown size={16} className="text-slate-500 rotate-[-90deg]" />
+      </div>
+    </button>
+  );
+}
+
 export default function ProblemDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [problem, setProblem] =
     useState<Problem | null>(null);
 
   const [loading, setLoading] =
     useState(true);
+
+  const [activeTab, setActiveTab] =
+    useState<'description' | 'submissions'>('description');
+
+  const [submissions, setSubmissions] =
+    useState<Submission[]>([]);
+
+  const [loadingSubmissions, setLoadingSubmissions] =
+    useState(false);
 
   const [language, setLanguage] =
     useState<
@@ -98,6 +174,16 @@ export default function ProblemDetail() {
     useState(false);
 
   const [showHints, setShowHints] =
+    useState(false);
+
+  // AI CODE REVIEW STATES
+  const [loadingAIReview, setLoadingAIReview] =
+    useState(false);
+
+  const [aiReview, setAiReview] =
+    useState<string | null>(null);
+
+  const [showReviewModal, setShowReviewModal] =
     useState(false);
 
   // CUSTOM INPUT STATES
@@ -156,6 +242,37 @@ export default function ProblemDetail() {
   useEffect(() => {
     setCode(starterCodes[language]);
   }, [language]);
+
+  const fetchSubmissions = async () => {
+    if (!problem) return;
+    try {
+      setLoadingSubmissions(true);
+      const userId = localStorage.getItem('userId');
+      const response = await fetch(
+        `${API_BASE_URL}/api/problem/getSubmissions?userId=${userId}&problemId=${problem._id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setSubmissions(data.submissions || []);
+      }
+    } catch (error) {
+      console.error('Error fetching submissions:', error);
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  };
+
+  const handleSubmissionsTabClick = () => {
+    setActiveTab('submissions');
+    if (submissions.length === 0) {
+      fetchSubmissions();
+    }
+  };
 
   const handleRunCode =
     async () => {
@@ -263,6 +380,40 @@ export default function ProblemDetail() {
       }
     };
 
+  const handleAICodeReview = async () => {
+    try {
+      if (!problem || !code) return;
+
+      setLoadingAIReview(true);
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/problem/aiCodeReview`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({
+            problemId: problem._id,
+            code,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setAiReview(data.review);
+        setShowReviewModal(true);
+      }
+    } catch (error) {
+      console.error('Error getting AI review:', error);
+    } finally {
+      setLoadingAIReview(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-950">
@@ -319,12 +470,40 @@ export default function ProblemDetail() {
 
         {/* LEFT PANEL */}
 
-        <div className="w-1/2 bg-slate-900 border border-slate-800 rounded-2xl overflow-y-auto">
-          <div className="p-6">
+        <div className="w-1/2 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col">
+          {/* TABS */}
+          <div className="flex border-b border-slate-800 bg-slate-800/50">
+            <button
+              onClick={() => setActiveTab('description')}
+              className={cn(
+                'flex-1 px-4 py-3 font-semibold transition-all border-b-2',
+                activeTab === 'description'
+                  ? 'border-indigo-500 text-indigo-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-300'
+              )}
+            >
+              Problem Description
+            </button>
+            <button
+              onClick={handleSubmissionsTabClick}
+              className={cn(
+                'flex-1 px-4 py-3 font-semibold transition-all border-b-2',
+                activeTab === 'submissions'
+                  ? 'border-indigo-500 text-indigo-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-300'
+              )}
+            >
+              Your Submissions
+            </button>
+          </div>
 
-            <h1 className="text-3xl font-bold text-white mb-4">
-              {problem.title}
-            </h1>
+          {/* CONTENT */}
+          <div className="flex-1 overflow-y-auto">
+            {activeTab === 'description' ? (
+              <div className="p-6">
+                <h1 className="text-3xl font-bold text-white mb-4">
+                  {problem.title}
+                </h1>
 
             <div className="flex items-center gap-3 mb-8">
               <span
@@ -446,6 +625,40 @@ export default function ProblemDetail() {
                 </div>
               </div>
             )}
+              </div>
+            ) : (
+              // SUBMISSIONS TAB
+              <div className="p-6">
+                {loadingSubmissions ? (
+                  <div className="flex items-center justify-center h-64">
+                    <Loader2 className="animate-spin text-indigo-500" size={32} />
+                  </div>
+                ) : submissions.length === 0 ? (
+                  <div className="text-center text-slate-400 py-12">
+                    <p>No submissions yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-7 gap-2 text-xs text-slate-400 font-semibold mb-4 pb-3 border-b border-slate-800">
+                      <div>Language</div>
+                      <div>Status</div>
+                      <div>Time (ms)</div>
+                      <div>Memory (KB)</div>
+                      <div>Passed</div>
+                      <div>Submitted</div>
+                      <div></div>
+                    </div>
+                    {submissions.map((submission) => (
+                      <SubmissionRow
+                        key={submission._id}
+                        submission={submission}
+                        problemId={problem._id}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -497,6 +710,26 @@ export default function ProblemDetail() {
           Java
         </option>
       </select>
+
+      <button
+        onClick={handleAICodeReview}
+        disabled={loadingAIReview || !code}
+        className={cn(
+          'px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-2',
+          loadingAIReview
+            ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300 cursor-not-allowed'
+            : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20'
+        )}
+      >
+        {loadingAIReview ? (
+          <>
+            <Loader2 size={12} className="animate-spin" />
+            Reviewing...
+          </>
+        ) : (
+          '✨ AI Review'
+        )}
+      </button>
     </div>
 
     <div className="flex items-center gap-2">
@@ -824,6 +1057,46 @@ Example:
     )}
 </div>
 </div>
+
+      {/* AI REVIEW MODAL */}
+      {showReviewModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            {/* HEADER */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">✨</div>
+                <h2 className="text-xl font-bold text-white">AI Code Review</h2>
+              </div>
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="text-slate-400 hover:text-white transition-all text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* CONTENT */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="prose prose-invert prose-sm max-w-none">
+                <div className="text-slate-300 whitespace-pre-wrap leading-relaxed">
+                  {aiReview}
+                </div>
+              </div>
+            </div>
+
+            {/* FOOTER */}
+            <div className="border-t border-slate-800 px-6 py-4 flex justify-end gap-3">
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="px-4 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

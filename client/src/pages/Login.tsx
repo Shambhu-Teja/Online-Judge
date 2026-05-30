@@ -27,7 +27,7 @@ export default function Login() {
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('token', data.token);
         localStorage.setItem('userId', data.user.id);
-        navigate('/home');
+        navigate('/problems');
       }
       else{
         alert(data.message || 'Login failed. Please check your credentials and try again.');

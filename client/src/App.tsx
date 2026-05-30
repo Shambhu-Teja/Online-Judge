@@ -7,9 +7,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import React, { useEffect, useState } from 'react';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import Home from './pages/Home';
 import ProblemList from './pages/ProblemList';
 import ProblemDetail from './pages/ProblemDetail';
+import SubmissionDetail from './pages/SubmissionDetail';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -33,12 +33,6 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         
-        <Route path="/home" element={
-          <ProtectedRoute>
-            <Home />
-          </ProtectedRoute>
-        } />
-        
         <Route path="/problems" element={
           <ProtectedRoute>
             <ProblemList />
@@ -51,7 +45,13 @@ export default function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="/" element={<Navigate to="/home" />} />
+        <Route path="/problems/:problemId/submissions/:submissionId" element={
+          <ProtectedRoute>
+            <SubmissionDetail />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/" element={<Navigate to="/problems" />} />
         <Route path="*" element={<Navigate to="/home" />} />
       </Routes>
     </Router>

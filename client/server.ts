@@ -46,6 +46,26 @@ async function startServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
+    
+    // SPA fallback for development - serve index.html for all non-API routes
+    app.get("*", (req, res) => {
+      res.set("Content-Type", "text/html");
+      vite.transformIndexHtml(req.originalUrl, `
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>Online Judge</title>
+          </head>
+          <body>
+            <div id="root"></div>
+            <script type="module" src="/src/main.tsx"><\/script>
+          </body>
+        </html>
+      `).then(html => res.send(html));
+    });
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
